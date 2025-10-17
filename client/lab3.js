@@ -3,8 +3,11 @@ const list = document.getElementById('course-list')
 const addBtn = document.getElementById('add')
 const errorEl = document.getElementById('error')
 const searchInput = document.getElementById('search-input')
+const sortCodeBtn = document.getElementById('sort-code')
+const sortNameBtn = document.getElementById('sort-name')
 
 let allCourses = []
+let currentSort = { key: null, asc: true }
 
 async function loadCourses() {
   const res = await fetch(API)
@@ -97,6 +100,23 @@ searchInput.addEventListener('input', e => {
   )
   renderCourses(filtered)
 })
+
+function sortCourses(key) {
+  if (currentSort.key === key) currentSort.asc = !currentSort.asc
+  else currentSort = { key, asc: true }
+
+  allCourses.sort((a, b) => {
+    const x = a[key].toLowerCase()
+    const y = b[key].toLowerCase()
+    if (x < y) return currentSort.asc ? -1 : 1
+    if (x > y) return currentSort.asc ? 1 : -1
+    return 0
+  })
+  renderCourses(allCourses)
+}
+
+sortCodeBtn.onclick = () => sortCourses('code')
+sortNameBtn.onclick = () => sortCourses('name')
 
 addBtn.onclick = addCourse
 loadCourses()
