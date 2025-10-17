@@ -84,3 +84,46 @@ app.delete('/api/courses/:id/members/:memberId', async (req, res) => {
 const PORT = process.env.PORT || 3000
 await init()
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`))
+
+app.get('/api/courses/:courseId/sheets', async (req, res) => {
+  await db.read()
+  const sheets = db.data.sheets.filter(s => s.courseId == req.params.courseId)
+  res.json(sheets)
+})
+
+// 🔹 CREATE signup sheet
+app.post(
+  '/api/courses/:courseId/sheets',
+  body('name').isString().trim().notEmpty(),
+  body('description').optional().isString(),
+  async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+    await db.read()
+    const course = db.data.courses.find(c => c.id == req.params.courseId)
+    if (!course) return res.status(404).json({ error: 'Course not found' })
+
+    const newSheet = {
+      id: db.data.nextSheetId++,
+      courseId: course.id,
+      name: req.body.name,
+      description: req.body.description || '',
+      slots: []
+    }
+
+    db.data.sheets.push(newSheet)
+    await db.write()
+    res.status(201).json(newSheet)
+  }
+)
+
+// 🔹 DELETE signup sheet
+app.delete('/api/sheets/:id', async (req, res) => {
+  await db.read()
+  const idx = db.data.sheets.findIndex(s => s.id == req.params.id)
+  if (idx === -1) return res.status(404).json({ error: 'Sheet not found' })
+  db.data.sheets.splice(idx, 1)
+  await db.write()
+  res.json({ ok: true })
+})

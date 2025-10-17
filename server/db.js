@@ -22,9 +22,8 @@ export async function init() {
     nextSlotId: 1
   }
 
-  for (const c of db.data.courses) {
-    c.members ||= []
-  }
+  for (const c of db.data.courses) c.members ||= []
+  for (const s of db.data.sheets) s.slots ||= []
 
   await db.write()
 }
