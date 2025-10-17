@@ -86,3 +86,14 @@ h1 {
   background: #e74c3c;
   color: white;
 }
+
+#search {
+  margin-bottom: 1rem;
+}
+
+#search input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}

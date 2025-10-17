@@ -2,11 +2,18 @@ const API = 'http://localhost:3000/api/courses'
 const list = document.getElementById('course-list')
 const addBtn = document.getElementById('add')
 const errorEl = document.getElementById('error')
+const searchInput = document.getElementById('search-input')
+
+let allCourses = []
 
 async function loadCourses() {
-  list.innerHTML = ''
   const res = await fetch(API)
-  const courses = await res.json()
+  allCourses = await res.json()
+  renderCourses(allCourses)
+}
+
+function renderCourses(courses) {
+  list.innerHTML = ''
   for (const c of courses) {
     const li = document.createElement('li')
     const text = document.createElement('span')
@@ -82,6 +89,14 @@ async function deleteCourse(id) {
   const res = await fetch(`${API}/${id}`, { method: 'DELETE' })
   if (res.ok) loadCourses()
 }
+
+searchInput.addEventListener('input', e => {
+  const term = e.target.value.toLowerCase()
+  const filtered = allCourses.filter(
+    c => c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term)
+  )
+  renderCourses(filtered)
+})
 
 addBtn.onclick = addCourse
 loadCourses()
