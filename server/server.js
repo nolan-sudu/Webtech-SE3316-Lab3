@@ -173,3 +173,64 @@ app.delete('/api/slots/:slotId/signup/:memberId', async (req, res) => {
   await db.write()
   res.json({ ok: true, slot })
 })
+
+app.get('/api/slots/:slotId/grades', async (req, res) => {
+  await db.read()
+  const sheet = db.data.sheets.find(s => s.slots.some(sl => sl.id == req.params.slotId))
+  if (!sheet) return res.status(404).json({ error: 'Sheet not found' })
+  const slot = sheet.slots.find(sl => sl.id == req.params.slotId)
+  if (!slot) return res.status(404).json({ error: 'Slot not found' })
+  if (!slot.grades) slot.grades = []
+  res.json(slot.grades)
+})
+
+app.post(
+  '/api/slots/:slotId/grades',
+  body('memberId').isInt(),
+  body('grade').isInt({ min: 0, max: 100 }),
+  body('comment').optional().isString(),
+  async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+    await db.read()
+    const sheet = db.data.sheets.find(s => s.slots.some(sl => sl.id == req.params.slotId))
+    if (!sheet) return res.status(404).json({ error: 'Sheet not found' })
+    const slot = sheet.slots.find(sl => sl.id == req.params.slotId)
+    if (!slot) return res.status(404).json({ error: 'Slot not found' })
+    if (!slot.signups.includes(req.body.memberId))
+      return res.status(400).json({ error: 'Member not signed up in this slot' })
+
+    slot.grades ||= []
+    const existing = slot.grades.find(g => g.memberId == req.body.memberId)
+    if (existing) {
+      existing.grade = req.body.grade
+      existing.comment = req.body.comment || existing.comment
+    } else {
+      slot.grades.push({
+        memberId: req.body.memberId,
+        grade: req.body.grade,
+        comment: req.body.comment || ''
+      })
+    }
+
+    await db.write()
+    res.status(201).json({ ok: true, grades: slot.grades })
+  }
+)
+
+app.delete('/api/slots/:slotId/grades/:memberId', async (req, res) => {
+  await db.read()
+  const sheet = db.data.sheets.find(s => s.slots.some(sl => sl.id == req.params.slotId))
+  if (!sheet) return res.status(404).json({ error: 'Sheet not found' })
+  const slot = sheet.slots.find(sl => sl.id == req.params.slotId)
+  if (!slot) return res.status(404).json({ error: 'Slot not found' })
+  if (!slot.grades) slot.grades = []
+
+  const idx = slot.grades.findIndex(g => g.memberId == req.params.memberId)
+  if (idx === -1) return res.status(404).json({ error: 'Grade not found' })
+  slot.grades.splice(idx, 1)
+
+  await db.write()
+  res.json({ ok: true })
+})
