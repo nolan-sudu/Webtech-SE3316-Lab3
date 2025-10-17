@@ -36,7 +36,6 @@ app.post(
   }
 )
 
-// 🔹 GET members
 app.get('/api/courses/:id/members', async (req, res) => {
   await db.read()
   const course = db.data.courses.find(c => c.id == req.params.id)
@@ -44,7 +43,6 @@ app.get('/api/courses/:id/members', async (req, res) => {
   res.json(course.members || [])
 })
 
-// 🔹 ADD member
 app.post(
   '/api/courses/:id/members',
   body('name').isString().trim().notEmpty(),
@@ -69,7 +67,6 @@ app.post(
   }
 )
 
-// 🔹 DELETE member
 app.delete('/api/courses/:id/members/:memberId', async (req, res) => {
   await db.read()
   const course = db.data.courses.find(c => c.id == req.params.id)
@@ -91,7 +88,6 @@ app.get('/api/courses/:courseId/sheets', async (req, res) => {
   res.json(sheets)
 })
 
-// 🔹 CREATE signup sheet
 app.post(
   '/api/courses/:courseId/sheets',
   body('name').isString().trim().notEmpty(),
@@ -118,7 +114,6 @@ app.post(
   }
 )
 
-// 🔹 DELETE signup sheet
 app.delete('/api/sheets/:id', async (req, res) => {
   await db.read()
   const idx = db.data.sheets.findIndex(s => s.id == req.params.id)
@@ -126,4 +121,55 @@ app.delete('/api/sheets/:id', async (req, res) => {
   db.data.sheets.splice(idx, 1)
   await db.write()
   res.json({ ok: true })
+})
+
+app.post(
+  '/api/slots/:slotId/signup',
+  body('memberId').isInt(),
+  async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+    await db.read()
+
+    const sheet = db.data.sheets.find(s => s.slots.some(sl => sl.id == req.params.slotId))
+    if (!sheet) return res.status(404).json({ error: 'Sheet not found' })
+
+    const slot = sheet.slots.find(sl => sl.id == req.params.slotId)
+    if (!slot) return res.status(404).json({ error: 'Slot not found' })
+
+    const course = db.data.courses.find(c => c.id == sheet.courseId)
+    if (!course) return res.status(404).json({ error: 'Course not found' })
+
+    const member = course.members.find(m => m.id == req.body.memberId)
+    if (!member) return res.status(400).json({ error: 'Invalid member for this course' })
+
+    if (slot.signups.includes(member.id))
+      return res.status(400).json({ error: 'Already signed up' })
+
+    if (slot.signups.length >= slot.capacity)
+      return res.status(400).json({ error: 'Slot full' })
+
+    slot.signups.push(member.id)
+    await db.write()
+    res.status(201).json({ ok: true, slot })
+  }
+)
+
+app.delete('/api/slots/:slotId/signup/:memberId', async (req, res) => {
+  await db.read()
+
+  const sheet = db.data.sheets.find(s => s.slots.some(sl => sl.id == req.params.slotId))
+  if (!sheet) return res.status(404).json({ error: 'Sheet not found' })
+
+  const slot = sheet.slots.find(sl => sl.id == req.params.slotId)
+  if (!slot) return res.status(404).json({ error: 'Slot not found' })
+
+  const memberId = parseInt(req.params.memberId)
+  const index = slot.signups.indexOf(memberId)
+  if (index === -1) return res.status(404).json({ error: 'Member not signed up' })
+
+  slot.signups.splice(index, 1)
+  await db.write()
+  res.json({ ok: true, slot })
 })
