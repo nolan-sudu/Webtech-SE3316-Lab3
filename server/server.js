@@ -16,14 +16,6 @@ app.get('/api/courses', async (req, res) => {
   res.json(db.data.courses)
 })
 
-app.get('/api/courses/:id', async (req, res) => {
-  await db.read()
-  const id = parseInt(req.params.id)
-  const course = db.data.courses.find(c => c.id === id)
-  if (!course) return res.status(404).json({ error: 'Course not found' })
-  res.json(course)
-})
-
 app.post(
   '/api/courses',
   body('code').isString().trim().notEmpty(),
@@ -37,43 +29,54 @@ app.post(
       return res.status(400).json({ error: 'Course code already exists' })
     }
 
-    const newCourse = { id: Date.now(), code: req.body.code, name: req.body.name }
+    const newCourse = { id: Date.now(), code: req.body.code, name: req.body.name, members: [] }
     db.data.courses.push(newCourse)
     await db.write()
     res.status(201).json(newCourse)
   }
 )
 
-app.put(
-  '/api/courses/:id',
-  body('code').isString().trim().notEmpty(),
+// 🔹 GET members
+app.get('/api/courses/:id/members', async (req, res) => {
+  await db.read()
+  const course = db.data.courses.find(c => c.id == req.params.id)
+  if (!course) return res.status(404).json({ error: 'Course not found' })
+  res.json(course.members || [])
+})
+
+// 🔹 ADD member
+app.post(
+  '/api/courses/:id/members',
   body('name').isString().trim().notEmpty(),
+  body('role').isIn(['student', 'ta', 'instructor']),
   async (req, res) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
 
-    const id = parseInt(req.params.id)
     await db.read()
-    const course = db.data.courses.find(c => c.id === id)
+    const course = db.data.courses.find(c => c.id == req.params.id)
     if (!course) return res.status(404).json({ error: 'Course not found' })
 
-    if (db.data.courses.some(c => c.code === req.body.code && c.id !== id)) {
-      return res.status(400).json({ error: 'Course code already exists' })
+    const { name, role } = req.body
+    if (course.members.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+      return res.status(400).json({ error: 'Member already exists in course' })
     }
 
-    course.code = req.body.code
-    course.name = req.body.name
+    const member = { id: Date.now(), name, role }
+    course.members.push(member)
     await db.write()
-    res.json(course)
+    res.status(201).json(member)
   }
 )
 
-app.delete('/api/courses/:id', async (req, res) => {
+// 🔹 DELETE member
+app.delete('/api/courses/:id/members/:memberId', async (req, res) => {
   await db.read()
-  const id = parseInt(req.params.id)
-  const index = db.data.courses.findIndex(c => c.id === id)
-  if (index === -1) return res.status(404).json({ error: 'Course not found' })
-  db.data.courses.splice(index, 1)
+  const course = db.data.courses.find(c => c.id == req.params.id)
+  if (!course) return res.status(404).json({ error: 'Course not found' })
+  const idx = course.members.findIndex(m => m.id == req.params.memberId)
+  if (idx === -1) return res.status(404).json({ error: 'Member not found' })
+  course.members.splice(idx, 1)
   await db.write()
   res.json({ ok: true })
 })
