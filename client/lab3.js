@@ -1,6 +1,7 @@
 const API = 'http://localhost:3000/api/courses'
 const list = document.getElementById('course-list')
 const addBtn = document.getElementById('add')
+const errorEl = document.getElementById('error')
 
 async function loadCourses() {
   list.innerHTML = ''
@@ -20,20 +21,31 @@ async function loadCourses() {
 async function addCourse() {
   const code = document.getElementById('code').value.trim()
   const name = document.getElementById('name').value.trim()
-  if (!code || !name) return alert('Enter both code and name')
+  errorEl.textContent = ''
+  if (!code || !name) {
+    errorEl.textContent = 'Please enter both course code and name.'
+    return
+  }
+
   const res = await fetch(API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, name })
   })
-  if (res.ok) loadCourses()
-  else alert('Failed to add course')
+
+  if (res.ok) {
+    document.getElementById('code').value = ''
+    document.getElementById('name').value = ''
+    loadCourses()
+  } else {
+    const data = await res.json().catch(() => ({}))
+    errorEl.textContent = data.error || 'Failed to add course.'
+  }
 }
 
 async function deleteCourse(id) {
   const res = await fetch(`${API}/${id}`, { method: 'DELETE' })
   if (res.ok) loadCourses()
-  else alert('Delete failed')
 }
 
 addBtn.onclick = addCourse
