@@ -9,12 +9,47 @@ async function loadCourses() {
   const courses = await res.json()
   for (const c of courses) {
     const li = document.createElement('li')
-    li.textContent = `${c.code} — ${c.name}`
+    const text = document.createElement('span')
+    text.textContent = `${c.code} — ${c.name}`
+    li.appendChild(text)
+
+    const edit = document.createElement('button')
+    edit.textContent = 'Edit'
+    edit.onclick = () => editCourse(c, li)
+    li.appendChild(edit)
+
     const del = document.createElement('button')
     del.textContent = 'Delete'
     del.onclick = () => deleteCourse(c.id)
     li.appendChild(del)
+
     list.appendChild(li)
+  }
+}
+
+function editCourse(c, li) {
+  li.innerHTML = ''
+  const codeInput = document.createElement('input')
+  codeInput.value = c.code
+  const nameInput = document.createElement('input')
+  nameInput.value = c.name
+  const save = document.createElement('button')
+  save.textContent = 'Save'
+  save.onclick = () => saveCourse(c.id, codeInput.value, nameInput.value)
+  li.append(codeInput, nameInput, save)
+}
+
+async function saveCourse(id, code, name) {
+  errorEl.textContent = ''
+  const res = await fetch(`${API}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, name })
+  })
+  if (res.ok) loadCourses()
+  else {
+    const data = await res.json().catch(() => ({}))
+    errorEl.textContent = data.error || 'Failed to update course.'
   }
 }
 

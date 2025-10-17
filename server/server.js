@@ -44,6 +44,30 @@ app.post(
   }
 )
 
+app.put(
+  '/api/courses/:id',
+  body('code').isString().trim().notEmpty(),
+  body('name').isString().trim().notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+    const id = parseInt(req.params.id)
+    await db.read()
+    const course = db.data.courses.find(c => c.id === id)
+    if (!course) return res.status(404).json({ error: 'Course not found' })
+
+    if (db.data.courses.some(c => c.code === req.body.code && c.id !== id)) {
+      return res.status(400).json({ error: 'Course code already exists' })
+    }
+
+    course.code = req.body.code
+    course.name = req.body.name
+    await db.write()
+    res.json(course)
+  }
+)
+
 app.delete('/api/courses/:id', async (req, res) => {
   await db.read()
   const id = parseInt(req.params.id)
