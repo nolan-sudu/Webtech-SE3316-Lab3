@@ -3,33 +3,89 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script defer src="lab3.js"></script>
     <link rel="stylesheet" href="style.css" />
-    <title>SE 3316 – Lab 3</title>
+    <script defer src="lab3.js"></script>
+    <title>SE3316 Lab 3 – Course Signup Management</title>
   </head>
   <body>
     <main>
-      <h1>Course Management</h1>
+      <h1>Course Signup Management</h1>
+      <p class="subtitle">Manage courses, signup sheets, slots, and grading</p>
 
-      <section id="add-course">
-        <input id="code" placeholder="Course code" />
-        <input id="name" placeholder="Course name" />
-        <button id="add">Add Course</button>
-        <p id="error"></p>
+      <section class="box">
+        <h2>Managing Courses</h2>
+        <div class="subsection">
+          <h3>Create / Delete Courses</h3>
+          <div class="form">
+            <input id="course-code" type="number" placeholder="Term code (1–9999)" />
+            <input id="course-name" maxlength="100" placeholder="Course name (max 100 chars)" />
+            <input id="course-section" type="number" placeholder="Section (default 1)" />
+            <button id="add-course-btn">Add Course</button>
+          </div>
+          <ul id="course-list"></ul>
+        </div>
+
+        <div class="subsection">
+          <h3>Members</h3>
+          <div class="form">
+            <input id="member-id" maxlength="8" placeholder="Member ID (8 char)" />
+            <input id="member-fn" maxlength="200" placeholder="First name" />
+            <input id="member-ln" maxlength="200" placeholder="Last name" />
+            <select id="member-role">
+              <option value="student">Student</option>
+              <option value="ta">TA</option>
+              <option value="instructor">Instructor</option>
+            </select>
+            <button id="add-member">Add Member</button>
+          </div>
+          <ul id="member-list"></ul>
+        </div>
       </section>
 
-      <section id="search">
-        <input id="search-input" placeholder="Search courses..." />
+      <section class="box">
+        <h2>Managing Signup Sheets</h2>
+        <div class="subsection">
+          <h3>Signup Sheets</h3>
+          <div class="form">
+            <input id="sheet-name" maxlength="100" placeholder="Assignment name" />
+            <input id="not-before" type="datetime-local" />
+            <input id="not-after" type="datetime-local" />
+            <button id="add-sheet">Create Sheet</button>
+          </div>
+          <ul id="sheet-list"></ul>
+        </div>
+
+        <div class="subsection">
+          <h3>Slots</h3>
+          <div class="form">
+            <input id="slot-start" type="datetime-local" />
+            <input id="slot-duration" type="number" placeholder="Duration (1–240 min)" />
+            <input id="slot-num" type="number" placeholder="Num slots (1–99)" />
+            <input id="slot-max" type="number" placeholder="Max members (1–99)" />
+            <button id="add-slot">Add Slot</button>
+          </div>
+          <ul id="slot-list"></ul>
+        </div>
       </section>
 
-      <section id="sort-controls">
-        <button id="sort-code">Sort by Code</button>
-        <button id="sort-name">Sort by Name</button>
+      <section class="box">
+        <h2>Manage Grading</h2>
+        <div class="subsection">
+          <h3>Grades</h3>
+          <div class="form">
+            <input id="grade-member-id" maxlength="8" placeholder="Member ID" />
+            <input id="grade-sheet-id" type="number" placeholder="Sheet ID" />
+            <input id="grade-value" type="number" placeholder="Grade (0–999)" />
+            <input id="grade-comment" maxlength="500" placeholder="Comment (max 500 chars)" />
+            <button id="add-grade">Submit Grade</button>
+          </div>
+          <ul id="grade-list"></ul>
+        </div>
       </section>
 
-      <section id="courses">
-        <ul id="course-list"></ul>
-      </section>
+      <p id="error"></p>
     </main>
   </body>
 </html>
+
+

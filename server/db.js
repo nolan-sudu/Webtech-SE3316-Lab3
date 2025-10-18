@@ -1,31 +1,24 @@
-import { Low } from 'lowdb'
-import { JSONFile } from 'lowdb/node'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { Low } from "lowdb"
+import { JSONFile } from "lowdb/node"
+import path from "path"
+import { fileURLToPath } from "url"
+import fs from "fs"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = path.join(__dirname, 'data')
+const dataDir = path.join(__dirname, "data")
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
 
-const file = path.join(dataDir, 'db.json')
+const file = path.join(dataDir, "db.json")
 const adapter = new JSONFile(file)
-const db = new Low(adapter)
+export const db = new Low(adapter, {})
 
-export async function init() {
+export async function initDB() {
   await db.read()
-  db.data ||= {
-    courses: [],
-    sheets: [],
-    slots: [],
-    nextSheetId: 1,
-    nextSlotId: 1
-  }
-
-  for (const c of db.data.courses) c.members ||= []
-  for (const s of db.data.sheets) s.slots ||= []
-
+  db.data ||= {}
+  db.data.courses ||= []
+  db.data.sheets ||= []
+  db.data.grades ||= []
+  db.data.nextSheetId ||= 1
+  db.data.nextSlotId ||= 1
   await db.write()
 }
-
-export { db }

@@ -1,122 +1,186 @@
-const API = 'http://localhost:3000/api/courses'
-const list = document.getElementById('course-list')
-const addBtn = document.getElementById('add')
-const errorEl = document.getElementById('error')
-const searchInput = document.getElementById('search-input')
-const sortCodeBtn = document.getElementById('sort-code')
-const sortNameBtn = document.getElementById('sort-name')
-
-let allCourses = []
-let currentSort = { key: null, asc: true }
-
-async function loadCourses() {
-  const res = await fetch(API)
-  allCourses = await res.json()
-  renderCourses(allCourses)
-}
-
-function renderCourses(courses) {
-  list.innerHTML = ''
-  for (const c of courses) {
-    const li = document.createElement('li')
-    const text = document.createElement('span')
-    text.textContent = `${c.code} — ${c.name}`
-    li.appendChild(text)
-
-    const edit = document.createElement('button')
-    edit.textContent = 'Edit'
-    edit.onclick = () => editCourse(c, li)
-    li.appendChild(edit)
-
-    const del = document.createElement('button')
-    del.textContent = 'Delete'
-    del.onclick = () => deleteCourse(c.id)
-    li.appendChild(del)
-
-    list.appendChild(li)
-  }
-}
-
-function editCourse(c, li) {
-  li.innerHTML = ''
-  const codeInput = document.createElement('input')
-  codeInput.value = c.code
-  const nameInput = document.createElement('input')
-  nameInput.value = c.name
-  const save = document.createElement('button')
-  save.textContent = 'Save'
-  save.onclick = () => saveCourse(c.id, codeInput.value, nameInput.value)
-  li.append(codeInput, nameInput, save)
-}
-
-async function saveCourse(id, code, name) {
-  errorEl.textContent = ''
-  const res = await fetch(`${API}/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, name })
-  })
-  if (res.ok) loadCourses()
-  else {
-    const data = await res.json().catch(() => ({}))
-    errorEl.textContent = data.error || 'Failed to update course.'
-  }
-}
+const api = 'http://localhost:3000/api'
+let currentCourse = null
+let currentSheet = null
 
 async function addCourse() {
-  const code = document.getElementById('code').value.trim()
-  const name = document.getElementById('name').value.trim()
-  errorEl.textContent = ''
-  if (!code || !name) {
-    errorEl.textContent = 'Please enter both course code and name.'
-    return
-  }
-
-  const res = await fetch(API, {
+  const termCode = parseInt(document.getElementById('course-code').value)
+  const name = document.getElementById('course-name').value.trim()
+  const section = parseInt(document.getElementById('course-section').value) || 1
+  if (!termCode || !name) return showError('Fill in all course fields')
+  const res = await fetch(`${api}/courses`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, name })
+    body: JSON.stringify({ termCode, name, section })
   })
-
   if (res.ok) {
-    document.getElementById('code').value = ''
-    document.getElementById('name').value = ''
     loadCourses()
-  } else {
-    const data = await res.json().catch(() => ({}))
-    errorEl.textContent = data.error || 'Failed to add course.'
-  }
+    clearError()
+  } else showError('Error adding course')
 }
 
-async function deleteCourse(id) {
-  const res = await fetch(`${API}/${id}`, { method: 'DELETE' })
-  if (res.ok) loadCourses()
-}
-
-searchInput.addEventListener('input', e => {
-  const term = e.target.value.toLowerCase()
-  const filtered = allCourses.filter(
-    c => c.code.toLowerCase().includes(term) || c.name.toLowerCase().includes(term)
-  )
-  renderCourses(filtered)
-})
-
-function sortCourses(key) {
-  if (currentSort.key === key) currentSort.asc = !currentSort.asc
-  else currentSort = { key, asc: true }
-
-  allCourses.sort((a, b) => {
-    const x = a[key].toLowerCase()
-    const y = b[key].toLowerCase()
-    if (x < y) return currentSort.asc ? -1 : 1
-    if (x > y) return currentSort.asc ? 1 : -1
-    return 0
+async function loadCourses() {
+  const res = await fetch(`${api}/courses`)
+  const data = await res.json()
+  const list = document.getElementById('course-list')
+  list.innerHTML = ''
+  data.forEach(c => {
+    const li = document.createElement('li')
+    li.textContent = `${c.termCode}-${c.section} — ${c.name}`
+    const del = document.createElement('button')
+    del.textContent = 'Delete'
+    del.onclick = () => deleteCourse(c.termCode, c.section)
+    const open = document.createElement('button')
+    open.textContent = 'Open'
+    open.onclick = () => selectCourse(c)
+    li.append(open, del)
+    list.append(li)
   })
-  renderCourses(allCourses)
 }
 
-sortCodeBtn.onclick = () => sortCourses('code')
-sortNameBtn.onclick = () => sortCourses('name')
+async function deleteCourse(termCode, section) {
+  await fetch(`${api}/courses/${termCode}/${section}`, { method: 'DELETE' })
+  loadCourses()
+}
 
-addBtn.onclick = addCourse
+function selectCourse(c) {
+  currentCourse = c
+  document.getElementById('member-list').innerHTML = ''
+  document.getElementById('sheet-list').innerHTML = ''
+  document.getElementById('slot-list').innerHTML = ''
+  loadMembers()
+  loadSheets()
+}
+
+async function addMember() {
+  if (!currentCourse) return showError('Select a course first')
+  const id = document.getElementById('member-id').value.trim()
+  const first = document.getElementById('member-fn').value.trim()
+  const last = document.getElementById('member-ln').value.trim()
+  const role = document.getElementById('member-role').value
+  if (!id || !first || !last) return showError('Fill all member fields')
+  const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify([{ id, first, last, role }])
+  })
+  if (res.ok) {
+    loadMembers()
+    clearError()
+  } else showError('Error adding member')
+}
+
+async function loadMembers() {
+  const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/members`)
+  const data = await res.json()
+  const list = document.getElementById('member-list')
+  list.innerHTML = ''
+  data.forEach(m => {
+    const li = document.createElement('li')
+    li.textContent = `${m.id} — ${m.first} ${m.last} (${m.role})`
+    list.append(li)
+  })
+}
+
+async function addSheet() {
+  if (!currentCourse) return showError('Select a course first')
+  const name = document.getElementById('sheet-name').value.trim()
+  const notBefore = document.getElementById('not-before').value
+  const notAfter = document.getElementById('not-after').value
+  const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/sheets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, notBefore, notAfter })
+  })
+  if (res.ok) {
+    loadSheets()
+    clearError()
+  } else showError('Error creating sheet')
+}
+
+async function loadSheets() {
+  const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/sheets`)
+  const data = await res.json()
+  const list = document.getElementById('sheet-list')
+  list.innerHTML = ''
+  data.forEach(s => {
+    const li = document.createElement('li')
+    li.textContent = `${s.id}: ${s.name}`
+    const open = document.createElement('button')
+    open.textContent = 'Open'
+    open.onclick = () => selectSheet(s)
+    const del = document.createElement('button')
+    del.textContent = 'Delete'
+    del.onclick = () => deleteSheet(s.id)
+    li.append(open, del)
+    list.append(li)
+  })
+}
+
+async function deleteSheet(id) {
+  await fetch(`${api}/sheets/${id}`, { method: 'DELETE' })
+  loadSheets()
+}
+
+function selectSheet(s) {
+  currentSheet = s
+  loadSlots()
+}
+
+async function addSlot() {
+  if (!currentSheet) return showError('Select a sheet first')
+  const start = document.getElementById('slot-start').value
+  const slotDuration = parseInt(document.getElementById('slot-duration').value)
+  const numSlots = parseInt(document.getElementById('slot-num').value)
+  const maxMembers = parseInt(document.getElementById('slot-max').value)
+  const res = await fetch(`${api}/sheets/${currentSheet.id}/slots`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ start, slotDuration, numSlots, maxMembers })
+  })
+  if (res.ok) {
+    loadSlots()
+    clearError()
+  } else showError('Error adding slot')
+}
+
+async function loadSlots() {
+  const res = await fetch(`${api}/sheets/${currentSheet.id}/slots`)
+  const data = await res.json()
+  const list = document.getElementById('slot-list')
+  list.innerHTML = ''
+  data.forEach(sl => {
+    const li = document.createElement('li')
+    li.textContent = `Slot ${sl.id}: ${sl.start} | Max ${sl.maxMembers}`
+    list.append(li)
+  })
+}
+
+async function addGrade() {
+  const memberId = document.getElementById('grade-member-id').value.trim()
+  const sheetId = parseInt(document.getElementById('grade-sheet-id').value)
+  const grade = parseInt(document.getElementById('grade-value').value)
+  const comment = document.getElementById('grade-comment').value.trim()
+  const res = await fetch(`${api}/grades`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memberId, sheetId, grade, comment })
+  })
+  if (!res.ok) showError('Error adding grade')
+  else clearError()
+}
+
+function showError(msg) {
+  document.getElementById('error').textContent = msg
+}
+
+function clearError() {
+  document.getElementById('error').textContent = ''
+}
+
+document.getElementById('add-course-btn').onclick = addCourse
+document.getElementById('add-member').onclick = addMember
+document.getElementById('add-sheet').onclick = addSheet
+document.getElementById('add-slot').onclick = addSlot
+document.getElementById('add-grade').onclick = addGrade
+
 loadCourses()

@@ -1,17 +1,14 @@
 {
-  "type": "module",
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "express-validator": "^7.2.1",
-    "lowdb": "^5.0.5",
-    "nanoid": "^5.1.6"
+    "lowdb": "^5.0.5"
   }
 }
