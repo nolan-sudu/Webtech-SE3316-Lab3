@@ -57,6 +57,29 @@ app.post("/api/courses/:termCode/:section/members", async (req, res) => {
   res.json({ added: newMembers.length, ignored })
 })
 
+app.delete('/api/courses/:termCode/:section/members', async (req, res) => {
+  await db.read()
+  const termCode = parseInt(req.params.termCode)
+  const section = parseInt(req.params.section)
+  const ids = req.body
+
+  if (!Array.isArray(ids) || ids.length === 0)
+    return res.status(400).json({ error: 'Provide an array of member IDs' })
+
+  const course = db.data.courses.find(c => c.termCode === termCode && c.section === section)
+  if (!course)
+    return res.status(404).json({ error: 'Course not found' })
+
+  if (!Array.isArray(course.members)) course.members = []
+
+  const beforeCount = course.members.length
+  course.members = course.members.filter(m => !ids.includes(m.id))
+  const afterCount = course.members.length
+
+  await db.write()
+  res.json({ deleted: beforeCount - afterCount, remaining: afterCount })
+})
+
 app.post("/api/courses/:termCode/:section/sheets", async (req, res) => {
   await db.read()
   const c = db.data.courses.find(c => c.termCode == req.params.termCode && c.section == req.params.section)

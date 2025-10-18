@@ -19,16 +19,14 @@ async function addCourse() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ termCode, name, section })
   })
-  if (res.ok) {
-    await loadCourses()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error adding course')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error adding course')
+  clearError()
+  currentCourse = { termCode, section, name }
+  await loadCourses(true)
 }
 
-async function loadCourses() {
+async function loadCourses(keepSelection = false) {
   const res = await fetch(`${api}/courses`)
   const data = await res.json()
   const list = document.getElementById('course-list')
@@ -39,61 +37,65 @@ async function loadCourses() {
     li.dataset.term = c.termCode
     li.dataset.section = c.section
     const label = document.createElement('span')
-    label.textContent = `${c.termCode} - SEC 0${c.section}: ${c.name}`
+    label.textContent = `${c.termCode}-${c.section} — ${c.name}`
     li.appendChild(label)
     const actions = document.createElement('div')
     actions.classList.add('course-actions')
     const selectBtn = document.createElement('button')
-    selectBtn.classList.add('open-btn')
     const isSelected = currentCourse && currentCourse.termCode === c.termCode && currentCourse.section === c.section
     selectBtn.textContent = isSelected ? 'Deselect' : 'Select'
+    selectBtn.classList.add('open-btn')
     selectBtn.onclick = () => toggleCourseSelection(c)
     const delBtn = document.createElement('button')
     delBtn.textContent = 'Delete'
     delBtn.classList.add('delete-btn')
-    delBtn.onclick = async () => {
-      await deleteCourse(c.termCode, c.section)
-    }
+    delBtn.onclick = async () => deleteCourse(c.termCode, c.section)
     actions.append(selectBtn, delBtn)
     li.append(actions)
     if (isSelected) li.classList.add('selected')
-    li.onclick = (e) => {
-      if (e.target === selectBtn || e.target === delBtn) return
-      toggleCourseSelection(c)
-    }
     list.appendChild(li)
+  })
+  if (keepSelection && currentCourse) {
+    updateCourseHighlight()
+    loadMembers()
+    loadSheets()
+  }
+}
+
+function updateCourseHighlight() {
+  document.querySelectorAll('#course-list li').forEach(li => {
+    const term = parseInt(li.dataset.term)
+    const sec = parseInt(li.dataset.section)
+    if (currentCourse && term === currentCourse.termCode && sec === currentCourse.section)
+      li.classList.add('selected')
+    else
+      li.classList.remove('selected')
   })
 }
 
 function toggleCourseSelection(c) {
   if (currentCourse && currentCourse.termCode === c.termCode && currentCourse.section === c.section) {
     currentCourse = null
+    currentSheet = null
     document.getElementById('member-list').innerHTML = ''
     document.getElementById('sheet-list').innerHTML = ''
     document.getElementById('slot-list').innerHTML = ''
-    document.getElementById('member-heading').textContent = 'Members'
   } else {
     currentCourse = c
-    document.getElementById('member-heading').textContent = `Members — Editing ${c.name} (${c.termCode}-${c.section})`
     loadMembers()
     loadSheets()
   }
-  loadCourses()
+  updateCourseHighlight()
 }
 
 async function deleteCourse(termCode, section) {
   const res = await fetch(`${api}/courses/${termCode}/${section}`, { method: 'DELETE' })
-  if (!res.ok) {
-    const data = await res.json().catch(()=>({}))
-    return showError(data.error || 'Error deleting course')
-  }
-  if (currentCourse && currentCourse.termCode === termCode && currentCourse.section === section) currentCourse = null
-  await loadCourses()
-  document.getElementById('member-list').innerHTML = ''
-  document.getElementById('sheet-list').innerHTML = ''
-  document.getElementById('slot-list').innerHTML = ''
-  document.getElementById('member-heading').textContent = 'Members'
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error deleting course')
   clearError()
+  if (currentCourse && currentCourse.termCode === termCode && currentCourse.section === section)
+    currentCourse = null
+  await loadCourses(true)
 }
 
 async function addMember() {
@@ -109,13 +111,11 @@ async function addMember() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  if (res.ok) {
-    await loadMembers()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error adding member')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error adding member')
+  clearError()
+  await loadMembers()
+  updateCourseHighlight()
 }
 
 async function loadMembers() {
@@ -142,19 +142,17 @@ async function loadMembers() {
 
 async function deleteMember(memberId) {
   if (!currentCourse) return
-  const payload = { ids: [memberId] }
+  const payload = [memberId]
   const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/members`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  if (res.ok) {
-    await loadMembers()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error deleting member')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error deleting member')
+  clearError()
+  await loadMembers()
+  updateCourseHighlight()
 }
 
 async function addSheet() {
@@ -168,50 +166,50 @@ async function addSheet() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, notBefore, notAfter })
   })
-  if (res.ok) {
-    await loadSheets()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error creating sheet')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error creating sheet')
+  clearError()
+  currentSheet = data
+  await loadSheets(true)
 }
 
-async function loadSheets() {
+async function loadSheets(keepSelection = false) {
   if (!currentCourse) return
   const res = await fetch(`${api}/courses/${currentCourse.termCode}/${currentCourse.section}/sheets`)
   const data = await res.json()
   const list = document.getElementById('sheet-list')
   list.innerHTML = ''
-  
   data.forEach(s => {
     const li = document.createElement('li')
     li.dataset.id = s.id
-
-    const label = document.createElement('span')
-    label.textContent = `${s.id}: ${s.name}`
-    li.appendChild(label)
-
+    const text = document.createElement('span')
+    text.textContent = `${s.id}: ${s.name}`
+    li.appendChild(text)
     const actions = document.createElement('div')
-    actions.classList.add('course-actions')
-
-    const isSelected = currentSheet && currentSheet.id === s.id
-    const selectBtn = document.createElement('button')
-    selectBtn.textContent = isSelected ? 'Deselect' : 'Select'
-    selectBtn.classList.add('open-btn')
-    selectBtn.onclick = () => toggleSheetSelection(s)
-
-    const delBtn = document.createElement('button')
-    delBtn.textContent = 'Delete'
-    delBtn.classList.add('delete-btn')
-    delBtn.onclick = () => deleteSheet(s.id)
-
-    actions.append(selectBtn, delBtn)
+    const open = document.createElement('button')
+    open.textContent = currentSheet && currentSheet.id === s.id ? 'Close' : 'Open'
+    open.onclick = () => toggleSheetSelection(s)
+    const del = document.createElement('button')
+    del.textContent = 'Delete'
+    del.onclick = () => deleteSheet(s.id)
+    actions.append(open, del)
     li.append(actions)
-
-    if (isSelected) li.classList.add('selected')
-
+    if (currentSheet && currentSheet.id === s.id) li.classList.add('selected')
     list.appendChild(li)
+  })
+  if (keepSelection && currentSheet) {
+    updateSheetHighlight()
+    loadSlots()
+  }
+}
+
+function updateSheetHighlight() {
+  document.querySelectorAll('#sheet-list li').forEach(li => {
+    const id = parseInt(li.dataset.id)
+    if (currentSheet && id === currentSheet.id)
+      li.classList.add('selected')
+    else
+      li.classList.remove('selected')
   })
 }
 
@@ -223,23 +221,16 @@ function toggleSheetSelection(s) {
     currentSheet = s
     loadSlots()
   }
-  loadSheets()
+  updateSheetHighlight()
 }
 
 async function deleteSheet(id) {
   const res = await fetch(`${api}/sheets/${id}`, { method: 'DELETE' })
-  if (res.ok) {
-    await loadSheets()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error deleting sheet')
-  }
-}
-
-function selectSheet(s) {
-  currentSheet = s
-  loadSlots()
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error deleting sheet')
+  clearError()
+  if (currentSheet && currentSheet.id === id) currentSheet = null
+  await loadSheets(true)
 }
 
 async function addSlot() {
@@ -254,13 +245,11 @@ async function addSlot() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ start, slotDuration, numSlots, maxMembers })
   })
-  if (res.ok) {
-    await loadSlots()
-    clearError()
-  } else {
-    const data = await res.json().catch(()=>({}))
-    showError(data.error || 'Error adding slot')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error adding slot')
+  clearError()
+  await loadSlots()
+  updateSheetHighlight()
 }
 
 async function loadSlots() {
@@ -287,10 +276,8 @@ async function addGrade() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ memberId, sheetId, grade, comment })
   })
-  if (!res.ok) {
-    const data = await res.json().catch(()=>({}))
-    return showError(data.error || 'Error adding grade')
-  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return showError(data.error || 'Error adding grade')
   clearError()
 }
 
