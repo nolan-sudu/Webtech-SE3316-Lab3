@@ -14,6 +14,7 @@
 
       <section class="box">
         <h2>Managing Courses</h2>
+
         <div class="subsection">
           <h3>Create / Delete Courses</h3>
           <div class="form">
@@ -22,11 +23,11 @@
             <input id="course-section" type="number" placeholder="Section (default 1)" />
             <button id="add-course-btn">Add Course</button>
           </div>
-          <ul id="course-list"></ul>
+          <ul id="course-list" class="course-list"></ul>
         </div>
 
         <div class="subsection">
-          <h3>Members</h3>
+          <h3 id="member-heading">Members</h3>
           <div class="form">
             <input id="member-id" maxlength="8" placeholder="Member ID (8 char)" />
             <input id="member-fn" maxlength="200" placeholder="First name" />
@@ -38,12 +39,13 @@
             </select>
             <button id="add-member">Add Member</button>
           </div>
-          <ul id="member-list"></ul>
+          <ul id="member-list" class="member-list"></ul>
         </div>
       </section>
 
       <section class="box">
         <h2>Managing Signup Sheets</h2>
+
         <div class="subsection">
           <h3>Signup Sheets</h3>
           <div class="form">
@@ -70,6 +72,7 @@
 
       <section class="box">
         <h2>Manage Grading</h2>
+
         <div class="subsection">
           <h3>Grades</h3>
           <div class="form">
@@ -87,5 +90,6 @@
     </main>
   </body>
 </html>
+
 
 
