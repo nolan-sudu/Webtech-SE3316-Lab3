@@ -10,13 +10,13 @@
   <body>
     <main>
       <h1>Course Signup Management</h1>
-      <p class="subtitle">Manage courses, signup sheets, slots, and grading</p>
+      <p class="subtitle">Manage courses, Signup sheets, Slots, and Grading</p>
 
       <section class="box">
         <h2>Managing Courses</h2>
 
         <div class="subsection">
-          <h3>Create / Delete Courses</h3>
+          <h3 id="member-heading">Create/Delete Courses</h3>
           <div class="form">
             <input id="course-code" type="number" placeholder="Term code (1–9999)" />
             <input id="course-name" maxlength="100" placeholder="Course name (max 100 chars)" />
@@ -47,7 +47,7 @@
         <h2>Managing Signup Sheets</h2>
 
         <div class="subsection">
-          <h3>Signup Sheets</h3>
+          <h3 id="member-heading">Add Signup Sheets</h3>
           <div class="form">
             <input id="sheet-name" maxlength="100" placeholder="Assignment name" />
             <input id="not-before" type="datetime-local" />
@@ -58,7 +58,7 @@
         </div>
 
         <div class="subsection">
-          <h3>Slots</h3>
+          <h3 id="member-heading">Add Time Slots</h3>
           <div class="form">
             <input id="slot-start" type="datetime-local" />
             <input id="slot-duration" type="number" placeholder="Duration (1–240 min)" />
@@ -74,7 +74,7 @@
         <h2>Manage Grading</h2>
 
         <div class="subsection">
-          <h3>Grades</h3>
+          <h3 id="member-heading">Add Grades</h3>
           <div class="form">
             <input id="grade-member-id" maxlength="8" placeholder="Member ID" />
             <input id="grade-sheet-id" type="number" placeholder="Sheet ID" />
