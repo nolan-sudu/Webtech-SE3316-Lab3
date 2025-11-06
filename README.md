@@ -1,10 +1,13 @@
-# SE 3316 - Lab 3/4
-Please put all front-end files in the folder named `client` and all back-end files in the folder named `server`.
+# Objective
 
-For lab 3, edit `client/index.html` file to add necessary HTML and add links to your CSS files. Add your front-end JavaScript code to `client/lab3.js` Put all your CSS and any other JavaScript files in the `client` folder. Put all your front-end assets in `client/img` folder and back-end assets in `server/data` folder. Git will ignore content in these folders and you must copy them separately to the server when you are deploying.
+Design and implement a ReST API for creating and editing sign-up sheets, managing sign-up and grading for an assignment.
 
-For lab 4, create front-end framework inside `client` folder.
+# Features
 
-Edit `server/server.js` file to add JavaScript code that implements your REST API.
+- Includes pages to create courses, add members, and organize assignments.
 
-If you use any AI tools, please record the prompts in the file `ai-prompts.txt`. Commit history of this file must match the code changes in your repository.
+- Lets users sign up for slots, remove sign-ups, and view grades easily.
+
+- Works smoothly with live updates when users interact with the page.
+
+- Focuses on safe input handling and clear, user-friendly design.
